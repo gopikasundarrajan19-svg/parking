@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Manager Dashboard</h2>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="dashboard-card">
+            <i class="fas fa-parking"></i>
+            <h3>{{ total_spots }}</h3>
+            <p>Total Spots</p>
+            <small class="text-success">Available: {{ available_spots }}</small><br>
+            <small class="text-danger">Occupied: {{ occupied_spots }}</small>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="dashboard-card">
+            <i class="fas fa-calendar-day"></i>
+            <h3>{{ today_bookings }}</h3>
+            <p>Today's Bookings</p>
+            <h5>₹{{ today_revenue }}</h5>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="dashboard-card">
+            <i class="fas fa-users"></i>
+            <h3>{{ staff_count }}</h3>
+            <p>Active Staff</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="dashboard-card">
+            <i class="fas fa-tools"></i>
+            <h3>{{ maintenance_count }}</h3>
+            <p>Maintenance</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('manage_staff') }}" class="btn btn-primary mb-2 w-100">Manage Staff</a>
+                <a href="{{ url_for('manager_maintenance') }}" class="btn btn-warning mb-2 w-100">Maintenance</a>
+                <a href="{{ url_for('manager_pricing') }}" class="btn btn-info mb-2 w-100">Update Pricing</a>
+                <a href="{{ url_for('manager_reports') }}" class="btn btn-success w-100">Reports</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Spot Status</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    {% for spot in spots[:8] %}
+                    <div class="col-md-3 mb-2">
+                        <div class="card text-center">
+                            <div class="card-body p-2">
+                                <strong>{{ spot.spot_number }}</strong><br>
+                                <span class="badge bg-{{ 'success' if spot.status == 'available' else 'danger' }}">
+                                    {{ spot.status }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

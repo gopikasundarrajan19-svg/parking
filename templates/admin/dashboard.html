@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2 class="mb-4">Admin Dashboard</h2>
+
+<div class="row">
+    <div class="col-md-3">
+        <div class="dashboard-card">
+            <i class="fas fa-parking"></i>
+            <h3>{{ total_spots }}</h3>
+            <p>Total Spots</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="dashboard-card">
+            <i class="fas fa-book"></i>
+            <h3>{{ total_bookings }}</h3>
+            <p>Total Bookings</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="dashboard-card">
+            <i class="fas fa-rupee-sign"></i>
+            <h3>₹{{ total_revenue }}</h3>
+            <p>Total Revenue</p>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="dashboard-card">
+            <i class="fas fa-user-friends"></i>
+            <h3>{{ total_users }}</h3>
+            <p>Total Users</p>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-warning text-white">
+                <h5>Pending Manager Applications</h5>
+            </div>
+            <div class="card-body text-center">
+                <h1>{{ pending_managers }}</h1>
+                <a href="{{ url_for('approve_managers') }}" class="btn btn-warning">Review Applications</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <a href="{{ url_for('manage_spots') }}" class="btn btn-primary mb-2 w-100">
+                    <i class="fas fa-plus"></i> Manage Parking Spots
+                </a>
+                <a href="{{ url_for('admin_view_bookings') }}" class="btn btn-info w-100">
+                    <i class="fas fa-eye"></i> View All Bookings
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card-header">
+        <h5>Recent Bookings</h5>
+    </div>
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr><th>User</th><th>Spot</th><th>Amount</th><th>Status</th></tr>
+            </thead>
+            <tbody>
+                {% for booking in recent_bookings %}
+                <tr>
+                    <td>{{ booking.user.name }}</td>
+                    <td>{{ booking.parking_spot.spot_number }}</td>
+                    <td>₹{{ booking.total_amount }}</td>
+                    <td><span class="badge bg-success">{{ booking.status }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

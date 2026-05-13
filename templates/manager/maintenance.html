@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Maintenance</h2>
+
+<div class="row">
+    <div class="col-md-5">
+        <div class="card">
+            <div class="card-header">
+                <h5>Report Issue</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('add_maintenance') }}">
+                    <div class="mb-2">
+                        <select name="spot_id" class="form-control" required>
+                            <option value="">Select Spot</option>
+                            {% for spot in spots %}
+                                {% if spot.status != 'maintenance' %}
+                                <option value="{{ spot.id }}">Spot {{ spot.spot_number }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <select name="issue_type" class="form-control">
+                            <option>Lighting</option><option>Gate</option><option>Camera</option><option>Cleaning</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <textarea name="description" class="form-control" placeholder="Description" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-warning w-100">Report</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-7">
+        <div class="card">
+            <div class="card-header">
+                <h5>Requests</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead><tr><th>Spot</th><th>Issue</th><th>Status</th><th>Action</th></tr></thead>
+                    <tbody>
+                        {% for req in maintenance_requests %}
+                        <tr>
+                            <td>Spot {{ req.spot.spot_number }}</td>
+                            <td>{{ req.issue_type }}</td>
+                            <td><span class="badge bg-warning">{{ req.status }}</span></td>
+                            <td>
+                                {% if req.status == 'pending' %}
+                                <a href="{{ url_for('complete_maintenance', maintenance_id=req.id) }}" class="btn btn-success btn-sm">Complete</a>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

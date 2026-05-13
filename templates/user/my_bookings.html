@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>My Bookings</h2>
+
+<div class="card">
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr><th>Spot</th><th>Start</th><th>End</th><th>Amount</th><th>Status</th><th>Payment</th></tr>
+            </thead>
+            <tbody>
+                {% for booking in bookings %}
+                <tr>
+                    <td>{{ booking.parking_spot.spot_number }}</td>
+                    <td>{{ booking.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>{{ booking.end_time.strftime('%Y-%m-%d %H:%M') }}</td>
+                    <td>₹{{ booking.total_amount }}</td>
+                    <td><span class="badge bg-{{ 'success' if booking.status == 'active' else 'secondary' }}">{{ booking.status }}</span></td>
+                    <td><span class="badge bg-{{ 'success' if booking.payment_status == 'paid' else 'warning' }}">{{ booking.payment_status }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

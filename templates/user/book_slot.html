@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Book Spot {{ spot.spot_number }}</h5>
+            </div>
+            <div class="card-body">
+                <p>Type: {{ spot.spot_type|upper }} | Price: ₹{{ spot.price_per_hour }}/hour</p>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label>Duration (hours)</label>
+                        <select name="duration" class="form-control">
+                            <option value="1">1 hour - ₹{{ spot.price_per_hour }}</option>
+                            <option value="2">2 hours - ₹{{ spot.price_per_hour * 2 }}</option>
+                            <option value="3">3 hours - ₹{{ spot.price_per_hour * 3 }}</option>
+                            <option value="4">4 hours - ₹{{ spot.price_per_hour * 4 }}</option>
+                            <option value="6">6 hours - ₹{{ spot.price_per_hour * 6 }}</option>
+                            <option value="8">8 hours - ₹{{ spot.price_per_hour * 8 }}</option>
+                            <option value="12">12 hours - ₹{{ spot.price_per_hour * 12 }}</option>
+                            <option value="24">24 hours - ₹{{ spot.price_per_hour * 24 }}</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Proceed to Payment</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

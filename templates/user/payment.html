@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Payment</h5>
+            </div>
+            <div class="card-body">
+                <h6>Booking Summary:</h6>
+                <p>Spot: {{ booking.parking_spot.spot_number }}<br>
+                Duration: {{ ((booking.end_time - booking.start_time).total_seconds() / 3600)|round }} hours<br>
+                Total: <strong>₹{{ booking.total_amount }}</strong></p>
+                
+                <form method="POST" action="{{ url_for('process_payment', booking_id=booking.id) }}">
+                    <div class="mb-3">
+                        <select name="payment_method" class="form-control" required>
+                            <option value="credit_card">Credit Card</option>
+                            <option value="debit_card">Debit Card</option>
+                            <option value="upi">UPI</option>
+                            <option value="cash">Cash</option>
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-success w-100">Pay ₹{{ booking.total_amount }}</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

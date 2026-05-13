@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Pricing Management</h2>
+
+<div class="card">
+    <div class="card-body">
+        <table class="table">
+            <thead>
+                <tr><th>Spot</th><th>Type</th><th>Current Price</th><th>New Price</th><th>Action</th></tr>
+            </thead>
+            <tbody>
+                {% for spot in spots %}
+                <tr>
+                    <td>{{ spot.spot_number }}</td>
+                    <td>{{ spot.spot_type|upper }}</td>
+                    <td>₹{{ spot.price_per_hour }}/hr</td>
+                    <td>
+                        <form method="POST" action="{{ url_for('update_price') }}" style="display: flex; gap: 5px;">
+                            <input type="hidden" name="spot_id" value="{{ spot.id }}">
+                            <input type="number" name="price_per_hour" step="5" class="form-control" style="width: 100px;" value="{{ spot.price_per_hour }}">
+                            <button type="submit" class="btn btn-primary btn-sm">Update</button>
+                        </form>
+                    </td>
+                    <td><span class="badge bg-{{ 'success' if spot.status == 'available' else 'danger' }}">{{ spot.status }}</span></td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,146 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-8">
+        <div class="card mt-5">
+            <div class="card-body">
+                <h3 class="text-center mb-4">Welcome to Parking Management System</h3>
+                <p class="text-center">Efficient parking management made easy!</p>
+                
+                <div class="row mt-4">
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-user fa-3x text-primary"></i>
+                            <p>User Registration</p>
+                            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#registerUser">
+                                Register as User
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-chalkboard-teacher fa-3x text-warning"></i>
+                            <p>Manager Registration</p>
+                            <button class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#registerManager">
+                                Register as Manager
+                            </button>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="text-center">
+                            <i class="fas fa-sign-in-alt fa-3x text-success"></i>
+                            <p>Login</p>
+                            <button class="btn btn-success" data-bs-toggle="modal" data-bs-target="#login">
+                                Login
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Login Modal -->
+<div class="modal fade" id="login" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Login</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('login') }}">
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label>Email</label>
+                        <input type="email" name="email" class="form-control" required>
+                    </div>
+                    <div class="mb-3">
+                        <label>Password</label>
+                        <input type="password" name="password" class="form-control" required>
+                    </div>
+                
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Login</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- User Registration Modal -->
+<div class="modal fade" id="registerUser" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">User Registration</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('register') }}">
+                <div class="modal-body">
+                    <div class="mb-2">
+                        <input type="text" name="name" placeholder="Full Name" class="form-control" required>
+                    </div>
+                    <div class="mb-2">
+                        <input type="email" name="email" placeholder="Email" class="form-control" required>
+                    </div>
+                    <div class="mb-2">
+                        <input type="tel" name="phone" placeholder="Phone" class="form-control" required>
+                    </div>
+                    <div class="mb-2">
+                        <input type="text" name="vehicle_number" placeholder="Vehicle Number" class="form-control" required>
+                    </div>
+                    <div class="mb-2">
+                        <input type="password" name="password" placeholder="Password" class="form-control" required>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Register</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Manager Registration Modal -->
+<div class="modal fade" id="registerManager" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Manager Registration</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form method="POST" action="{{ url_for('manager_register') }}">
+                <div class="modal-body">
+                    <div class="mb-2">
+                        <input type="text" name="name" placeholder="Full Name" class="form-control" required>
+                    </div>
+                    <div class="mb-2">
+                        <input type="email" name="email" placeholder="Email" class="form-control" required>
+                    </div>
+                    <div class="mb-2">
+                        <input type="tel" name="phone" placeholder="Phone" class="form-control" required>
+                    </div>
+                    <div class="mb-2">
+                        <textarea name="qualification" placeholder="Qualifications" class="form-control" rows="2" required></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <textarea name="experience" placeholder="Previous Experience" class="form-control" rows="2" required></textarea>
+                    </div>
+                    <div class="mb-2">
+                        <input type="password" name="password" placeholder="Password" class="form-control" required>
+                    </div>
+                    <div class="alert alert-warning">
+                        <small>Your application will be reviewed by admin. You'll get access after approval.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-warning">Submit Application</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

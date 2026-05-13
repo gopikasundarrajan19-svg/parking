@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h2>Manage Parking Spots</h2>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header">
+                <h5>Add New Spot</h5>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{{ url_for('add_spot') }}">
+                    <div class="mb-2">
+                        <input type="text" name="spot_number" placeholder="Spot Number (A1, B2, etc)" class="form-control" required>
+                    </div>
+                    <div class="mb-2">
+                        <select name="spot_type" class="form-control">
+                            <option value="car">Car</option>
+                            <option value="bike">Bike</option>
+                            <option value="ev">Electric Vehicle</option>
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <input type="number" name="price_per_hour" placeholder="Price per hour" class="form-control" required>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Add Spot</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5>Parking Spots</h5>
+            </div>
+            <div class="card-body">
+                <table class="table">
+                    <thead>
+                        <tr><th>Spot</th><th>Type</th><th>Price</th><th>Status</th><th>Action</th></tr>
+                    </thead>
+                    <tbody>
+                        {% for spot in spots %}
+                        <tr>
+                            <td>{{ spot.spot_number }}</td>
+                            <td>{{ spot.spot_type|upper }}</td>
+                            <td>₹{{ spot.price_per_hour }}</td>
+                            <td><span class="badge bg-{{ 'success' if spot.status == 'available' else 'danger' }}">{{ spot.status }}</span></td>
+                            <td><a href="{{ url_for('delete_spot', spot_id=spot.id) }}" class="btn btn-danger btn-sm" onclick="return confirm('Delete?')">Delete</a></td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
