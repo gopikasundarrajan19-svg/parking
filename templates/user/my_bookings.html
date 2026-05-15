@@ -1,27 +1,174 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>My Bookings</h2>
+<div class="container mt-4">
+    <h2 class="mb-4">
+        <i class="fas fa-history"></i> My Booking History
+    </h2>
 
-<div class="card">
-    <div class="card-body">
-        <table class="table">
-            <thead>
-                <tr><th>Spot</th><th>Start</th><th>End</th><th>Amount</th><th>Status</th><th>Payment</th></tr>
+    {% if bookings %}
+    <div class="table-responsive">
+        <table class="table table-bordered table-hover">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Spot</th>
+                    <th>Vehicle</th>
+                    <th>Start Time</th>
+                    <th>End Time</th>
+                    <th>Duration</th>
+                    <th>Amount</th>
+                    <th>Payment</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
             </thead>
             <tbody>
                 {% for booking in bookings %}
-                <tr>
-                    <td>{{ booking.parking_spot.spot_number }}</td>
-                    <td>{{ booking.start_time.strftime('%Y-%m-%d %H:%M') }}</td>
-                    <td>{{ booking.end_time.strftime('%Y-%m-%d %H:%M') }}</td>
-                    <td>₹{{ booking.total_amount }}</td>
-                    <td><span class="badge bg-{{ 'success' if booking.status == 'active' else 'secondary' }}">{{ booking.status }}</span></td>
-                    <td><span class="badge bg-{{ 'success' if booking.payment_status == 'paid' else 'warning' }}">{{ booking.payment_status }}</span></td>
+                <tr class="{% if booking.status == 'active' %}table-warning{% endif %}">
+                    <td>#{{ booking.id }}</td>
+                    <td><strong>{{ booking.parking_spot.spot_number }}</strong><br>
+                        <small>{{ booking.parking_spot.spot_type }}</small>
+                    </td>
+                    <td>{{ current_user.vehicle_number }}</td>
+                    <td>{{ booking.start_time.strftime('%d-%m-%Y %H:%M') }}</td>
+                    <td>{{ booking.end_time.strftime('%d-%m-%Y %H:%M') }}</td>
+                    <td>
+                        {% set duration = ((booking.end_time - booking.start_time).total_seconds() / 3600)|round(1) %}
+                        {{ duration }} hrs
+                    </td>
+                    <td><strong>₹{{ booking.total_amount }}</strong></td>
+                    <td>
+                        {% if booking.payment_status == 'paid' %}
+                            <span class="badge bg-success">✅ Paid</span>
+                        {% elif booking.payment_status == 'refunded' %}
+                            <span class="badge bg-info">💰 Refunded</span>
+                        {% else %}
+                            <span class="badge bg-warning">⏳ Pending</span>
+                        {% endif %}
+                        <br>
+                        <small class="text-muted">₹{{ booking.total_amount }}</small>
+                    </td>
+                    <td>
+                        {% if booking.status == 'active' %}
+                            <span class="badge bg-success">🟢 Active</span>
+                        {% elif booking.status == 'cancelled' %}
+                            <span class="badge bg-danger">🔴 Cancelled</span>
+                        {% else %}
+                            <span class="badge bg-secondary">⚪ Completed</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <!-- CANCEL BUTTON - Right next to Payment -->
+                        {% if booking.status == 'active' %}
+                            <!-- Cancel Button with Modal -->
+                            <button type="button" class="btn btn-danger btn-sm w-100 mb-1" 
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#cancelModal{{ booking.id }}">
+                                <i class="fas fa-ban"></i> Cancel Booking
+                            </button>
+                            
+                            <!-- Release Button -->
+                            <a href="{{ url_for('release_spot', booking_id=booking.id) }}" 
+                               class="btn btn-success btn-sm w-100"
+                               onclick="return confirm('Release this parking spot?')">
+                                <i class="fas fa-check"></i> Release Spot
+                            </a>
+                            
+                            <!-- Cancel Modal -->
+                            <div class="modal fade" id="cancelModal{{ booking.id }}" tabindex="-1">
+                                <div class="modal-dialog">
+                                    <div class="modal-content">
+                                        <div class="modal-header bg-danger text-white">
+                                            <h5 class="modal-title">
+                                                <i class="fas fa-ban"></i> Cancel Booking #{{ booking.id }}
+                                            </h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <form method="POST" action="{{ url_for('cancel_booking', booking_id=booking.id) }}">
+                                            <div class="modal-body">
+                                                <div class="alert alert-warning">
+                                                    <strong>⚠️ Warning!</strong> Cancelling this booking will apply refund policy.
+                                                </div>
+                                                
+                                                <table class="table table-sm">
+                                                    <tr><th>Spot:</th><td>{{ booking.parking_spot.spot_number }}</td></tr>
+                                                    <tr><th>Amount:</th><td>₹{{ booking.total_amount }}</td></tr>
+                                                    <tr><th>Start:</th><td>{{ booking.start_time.strftime('%d-%m-%Y %H:%M') }}</td></tr>
+                                                </table>
+                                                
+                                                <div class="alert alert-info">
+                                                    <strong>💰 Refund Policy:</strong><br>
+                                                    • Before start: <span class="text-success">100% refund</span><br>
+                                                    • During booking: <span class="text-warning">50% refund</span><br>
+                                                    • After end: <span class="text-danger">No refund</span>
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label class="form-label">Reason for cancellation</label>
+                                                    <select name="cancellation_reason" class="form-control" required>
+                                                        <option value="">Select reason</option>
+                                                        <option value="Changed plans">🚗 Changed plans</option>
+                                                        <option value="Found cheaper">💰 Found cheaper parking</option>
+                                                        <option value="Vehicle breakdown">🔧 Vehicle breakdown</option>
+                                                        <option value="Emergency">🚨 Emergency</option>
+                                                        <option value="Wrong booking">❌ Wrong booking</option>
+                                                    </select>
+                                                </div>
+                                                
+                                                <div class="mb-3">
+                                                    <label>Additional comments</label>
+                                                    <textarea name="additional_comments" class="form-control" rows="2"></textarea>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                                <button type="submit" class="btn btn-danger" 
+                                                        onclick="return confirm('Are you sure you want to cancel this booking?')">
+                                                    <i class="fas fa-check"></i> Yes, Cancel Booking
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        {% elif booking.status == 'cancelled' %}
+                            <!-- Show cancellation info -->
+                            {% if booking.refund_amount and booking.refund_amount > 0 %}
+                                <span class="badge bg-info w-100 mb-1">
+                                    Refund: ₹{{ booking.refund_amount }}
+                                </span>
+                            {% endif %}
+                            {% if booking.cancellation_reason %}
+                                <span class="badge bg-secondary w-100">
+                                    Reason: {{ booking.cancellation_reason[:30] }}
+                                </span>
+                            {% endif %}
+                        {% else %}
+                            <span class="text-muted">Completed</span>
+                        {% endif %}
+                    </td>
                 </tr>
                 {% endfor %}
             </tbody>
         </table>
     </div>
+    {% else %}
+    <div class="alert alert-info text-center">
+        <i class="fas fa-calendar-alt"></i> No bookings found.<br>
+        <a href="{{ url_for('user_dashboard') }}" class="btn btn-primary mt-2">Book a Parking Spot</a>
+    </div>
+    {% endif %}
 </div>
+
+<style>
+    .table th, .table td {
+        vertical-align: middle;
+        text-align: center;
+    }
+    .btn-sm {
+        font-size: 12px;
+        padding: 5px 10px;
+    }
+</style>
 {% endblock %}

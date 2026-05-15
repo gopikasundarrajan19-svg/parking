@@ -44,10 +44,25 @@
                 <h5>Quick Actions</h5>
             </div>
             <div class="card-body">
-                <a href="{{ url_for('manage_staff') }}" class="btn btn-primary mb-2 w-100">Manage Staff</a>
-                <a href="{{ url_for('manager_maintenance') }}" class="btn btn-warning mb-2 w-100">Maintenance</a>
-                <a href="{{ url_for('manager_pricing') }}" class="btn btn-info mb-2 w-100">Update Pricing</a>
-                <a href="{{ url_for('manager_reports') }}" class="btn btn-success w-100">Reports</a>
+                <a href="{{ url_for('manage_staff') }}" class="btn btn-primary mb-2 w-100">
+                    <i class="fas fa-users"></i> Manage Staff
+                </a>
+                <a href="{{ url_for('manager_maintenance') }}" class="btn btn-warning mb-2 w-100">
+                    <i class="fas fa-tools"></i> Maintenance
+                </a>
+                <a href="{{ url_for('manager_pricing') }}" class="btn btn-info mb-2 w-100">
+                    <i class="fas fa-tag"></i> Update Pricing
+                </a>
+                <a href="{{ url_for('manager_reports') }}" class="btn btn-success mb-2 w-100">
+                    <i class="fas fa-chart-line"></i> Reports
+                </a>
+                <!-- View Cancellations Button - Added here -->
+                <a href="{{ url_for('manager_view_cancellations') }}" class="btn btn-danger w-100">
+                    <i class="fas fa-ban"></i> View Cancellations 
+                    {% if cancelled_count %}
+                        <span class="badge bg-light text-dark">{{ cancelled_count }}</span>
+                    {% endif %}
+                </a>
             </div>
         </div>
     </div>
@@ -64,13 +79,45 @@
                         <div class="card text-center">
                             <div class="card-body p-2">
                                 <strong>{{ spot.spot_number }}</strong><br>
-                                <span class="badge bg-{{ 'success' if spot.status == 'available' else 'danger' }}">
+                                <span class="badge bg-{{ 'success' if spot.status == 'available' else 'danger' if spot.status == 'occupied' else 'warning' }}">
                                     {{ spot.status }}
                                 </span>
                             </div>
                         </div>
                     </div>
                     {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Cancellation Stats Row -->
+<div class="row mt-3">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-danger text-white">
+                <h5><i class="fas fa-ban"></i> Cancellation Statistics</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4 text-center">
+                        <h4>Total Cancellations</h4>
+                        <h2 class="text-danger">{{ cancelled_count }}</h2>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <h4>Today's Cancellations</h4>
+                        <h2 class="text-warning">{{ today_cancellations if today_cancellations else 0 }}</h2>
+                    </div>
+                    <div class="col-md-4 text-center">
+                        <h4>Total Refund Amount</h4>
+                        <h2 class="text-success">₹{{ total_refund if total_refund else 0 }}</h2>
+                    </div>
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{{ url_for('manager_view_cancellations') }}" class="btn btn-danger">
+                        <i class="fas fa-eye"></i> View All Cancellations Details
+                    </a>
                 </div>
             </div>
         </div>

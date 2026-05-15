@@ -1,0 +1,467 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+
+    <h2 class="mb-4">
+        <i class="fas fa-ban text-danger"></i>
+        Cancelled Bookings - View Only
+        <small class="text-muted">(Manager View)</small>
+    </h2>
+
+    <!-- Search -->
+    <div class="mb-3">
+        <input type="text"
+               id="searchInput"
+               class="form-control"
+               placeholder="🔍 Search by name, email, spot...">
+    </div>
+
+    <!-- Stats -->
+    <div class="row mb-4">
+
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5>Total Cancellations</h5>
+                    <h2>{{ total_cancelled }}</h2>
+                    <p>All cancelled bookings</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5>Today's Cancellations</h5>
+                    <h2>{{ today_cancellations }}</h2>
+                    <p>{{ now().strftime('%d-%m-%Y') }}</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5>Weekly Cancellations</h5>
+                    <h2>{{ weekly_cancellations }}</h2>
+                    <p>Last 7 days</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5>Total Refund</h5>
+                    <h2>₹{{ total_refund_amount }}</h2>
+                    <p>Out of ₹{{ total_original_amount }}</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Table -->
+    <div class="card">
+
+        <div class="card-header bg-danger text-white">
+            <h5>Cancelled Bookings List</h5>
+        </div>
+
+        <div class="card-body">
+
+            {% if cancelled_bookings %}
+
+            <div class="table-responsive">
+
+                <table class="table table-bordered table-hover"
+                       id="cancellationsTable">
+
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>User</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Spot</th>
+                            <th>Amount</th>
+                            <th>Refund</th>
+                            <th>Cancelled Date</th>
+                            <th>Cancelled By</th>
+                            <th>Reason</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                    {% for booking in cancelled_bookings %}
+
+                    <tr>
+
+                        <td>#{{ booking.id }}</td>
+
+                        <td>{{ booking.user.name }}</td>
+
+                        <td>{{ booking.user.email }}</td>
+
+                        <td>{{ booking.user.phone }}</td>
+
+                        <td>
+                            {{ booking.parking_spot.spot_number }}
+                            <br>
+                            <small class="text-muted">
+                                {{ booking.parking_spot.spot_type }}
+                            </small>
+                        </td>
+
+                        <td class="text-danger">
+                            ₹{{ booking.total_amount }}
+                        </td>
+
+                        <td>
+
+                            {% if booking.refund_amount and booking.refund_amount > 0 %}
+
+                            <span class="text-success">
+                                ₹{{ booking.refund_amount }}
+                            </span>
+
+                            {% else %}
+
+                            <span class="text-muted">
+                                No Refund
+                            </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+
+                            {% if booking.cancelled_at %}
+
+                            {{ booking.cancelled_at.strftime('%d-%m-%Y %H:%M') }}
+
+                            <br>
+
+                            <small class="text-muted">
+
+                                {{ ((now()-booking.cancelled_at).total_seconds()/3600)|round }}
+
+                                hrs ago
+
+                            </small>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+
+                            {% if booking.cancelled_by=="user" %}
+
+                            <span class="badge bg-info">
+                                USER
+                            </span>
+
+                            {% else %}
+
+                            <span class="badge bg-warning">
+                                ADMIN
+                            </span>
+
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+
+                            <button
+                                class="btn btn-primary btn-sm viewReasonBtn"
+
+                                data-bs-toggle="modal"
+                                data-bs-target="#reasonModal"
+
+                                data-booking="{{ booking.id }}"
+
+                                data-spot="{{ booking.parking_spot.spot_number }}"
+
+                                data-date="{{ booking.cancelled_at.strftime('%d-%m-%Y %H:%M:%S') if booking.cancelled_at else 'N/A' }}"
+
+                                data-reason="{{ booking.cancellation_reason or 'No reason provided' }}"
+
+                                data-refund="{{ booking.refund_amount or 0 }}"
+
+                                data-total="{{ booking.total_amount }}"
+                            >
+
+                                <i class="fas fa-eye"></i>
+
+                                View
+
+                            </button>
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+            {% else %}
+
+            <div class="alert alert-success text-center">
+
+                <i class="fas fa-check-circle"></i>
+
+                No cancelled bookings found
+
+            </div>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- Single Reusable Modal -->
+
+<div class="modal fade"
+     id="reasonModal">
+
+<div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
+
+<div class="modal-content">
+
+<div class="modal-header bg-danger text-white">
+
+<h5 class="modal-title">
+
+<i class="fas fa-info-circle"></i>
+
+Cancellation Reason
+
+</h5>
+
+<button class="btn-close btn-close-white"
+data-bs-dismiss="modal">
+</button>
+
+</div>
+
+
+<div class="modal-body">
+
+<div class="alert alert-info">
+
+<strong>
+Booking #
+<span id="modalBooking"></span>
+</strong>
+
+<br>
+
+<strong>Spot:</strong>
+
+<span id="modalSpot"></span>
+
+<br>
+
+<strong>Cancelled:</strong>
+
+<span id="modalDate"></span>
+
+</div>
+
+
+<div class="card">
+
+<div class="card-header">
+
+Reason
+
+</div>
+
+<div class="card-body">
+
+<p id="modalReason">
+
+</p>
+
+</div>
+
+</div>
+
+
+<div id="refundSection">
+
+</div>
+
+</div>
+
+
+<div class="modal-footer">
+
+<button
+class="btn btn-secondary"
+data-bs-dismiss="modal">
+
+Close
+
+</button>
+
+</div>
+
+</div>
+</div>
+</div>
+
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<script>
+
+$(document).ready(function(){
+
+$("#searchInput").on("keyup",function(){
+
+let value=$(this).val().toLowerCase();
+
+$("#cancellationsTable tbody tr").filter(function(){
+
+$(this).toggle(
+
+$(this).text()
+
+.toLowerCase()
+
+.indexOf(value)>-1
+
+);
+
+});
+
+});
+
+
+
+$(".viewReasonBtn").click(function(){
+
+$("#modalBooking").text(
+$(this).data("booking")
+);
+
+$("#modalSpot").text(
+$(this).data("spot")
+);
+
+$("#modalDate").text(
+$(this).data("date")
+);
+
+$("#modalReason").text(
+$(this).data("reason")
+);
+
+
+let refund=parseFloat(
+$(this).data("refund")
+);
+
+let total=parseFloat(
+$(this).data("total")
+);
+
+
+if(refund>0){
+
+let percent=Math.round(
+(refund/total)*100
+);
+
+$("#refundSection").html(
+
+`<div class="alert alert-success mt-3">
+
+Refund Amount :
+
+₹${refund}
+
+(${percent}%)
+
+</div>`
+
+);
+
+}
+
+else{
+
+$("#refundSection").html("");
+
+}
+
+});
+
+});
+
+</script>
+
+
+<style>
+
+.card{
+
+box-shadow:0 2px 10px rgba(0,0,0,.1);
+
+margin-bottom:20px;
+
+transition:.3s;
+
+}
+
+.card:hover{
+
+transform:translateY(-3px);
+
+}
+
+.table td,
+.table th{
+
+vertical-align:middle;
+
+}
+
+.modal-body{
+
+max-height:70vh;
+
+overflow-y:auto;
+
+}
+
+#modalReason{
+
+word-break:break-word;
+
+white-space:normal;
+
+line-height:1.7;
+
+font-size:16px;
+
+}
+
+</style>
+
+{% endblock %}

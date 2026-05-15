@@ -1,9 +1,10 @@
-from flask import Flask, render_template, redirect, url_for, flash, request
+from flask import Flask, render_template, redirect, url_for, flash, request, jsonify
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
-from models import db, User, ParkingSpot, Booking, Payment, Staff, Maintenance, ManagerApplication
+from models import db, User, ParkingSpot, Booking, Payment, Staff, Maintenance, ManagerApplication, CancellationLog
 from database import init_db
 from datetime import datetime, timedelta
 import bcrypt
+import json
 
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'your-secret-key-here'
@@ -143,6 +144,7 @@ def admin_dashboard():
     total_revenue = db.session.query(db.func.sum(Payment.amount)).scalar() or 0
     total_users = User.query.filter_by(role='user').count()
     pending_managers = User.query.filter_by(role='manager_pending').count()
+    cancelled_bookings = Booking.query.filter_by(status='cancelled').count()
     
     recent_bookings = Booking.query.order_by(Booking.created_at.desc()).limit(10).all()
     
@@ -154,6 +156,7 @@ def admin_dashboard():
                          total_revenue=total_revenue,
                          total_users=total_users,
                          pending_managers=pending_managers,
+                         cancelled_bookings=cancelled_bookings,
                          recent_bookings=recent_bookings)
 
 @app.route('/admin/approve_managers')
@@ -249,6 +252,28 @@ def delete_spot(spot_id):
     flash('Parking spot deleted!', 'success')
     return redirect(url_for('manage_spots'))
 
+# ==================== IMPORTANT: UPDATED EDIT SPOT ROUTE ====================
+@app.route('/admin/edit_spot/<int:spot_id>', methods=['GET', 'POST'])
+@login_required
+def edit_spot(spot_id):
+    if current_user.role != 'admin':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('user_dashboard'))
+    
+    spot = ParkingSpot.query.get_or_404(spot_id)
+    
+    if request.method == 'POST':
+        spot.spot_number = request.form['spot_number']
+        spot.spot_type = request.form['spot_type']
+        spot.price_per_hour = float(request.form['price_per_hour'])
+        spot.status = request.form['status']
+        
+        db.session.commit()
+        flash(f'Spot {spot.spot_number} updated successfully!', 'success')
+        return redirect(url_for('manage_spots'))
+    
+    return render_template('admin/edit_spot.html', spot=spot)
+
 @app.route('/admin/view_bookings')
 @login_required
 def admin_view_bookings():
@@ -258,6 +283,20 @@ def admin_view_bookings():
     
     bookings = Booking.query.order_by(Booking.created_at.desc()).all()
     return render_template('admin/view_bookings.html', bookings=bookings)
+
+@app.route('/admin/cancelled_bookings')
+@login_required
+def admin_cancelled_bookings():
+    if current_user.role != 'admin':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('user_dashboard'))
+    
+    cancelled_bookings = Booking.query.filter_by(status='cancelled').order_by(Booking.cancelled_at.desc()).all()
+    total_refund = db.session.query(db.func.sum(Booking.refund_amount)).filter_by(status='cancelled').scalar() or 0
+    
+    return render_template('admin/cancelled_bookings.html', 
+                         cancelled_bookings=cancelled_bookings,
+                         total_refund=total_refund)
 
 # ==================== MANAGER ROUTES ====================
 @app.route('/manager/dashboard')
@@ -280,6 +319,8 @@ def manager_dashboard():
     
     staff_count = Staff.query.filter_by(status='active').count()
     maintenance_count = Maintenance.query.filter_by(status='pending').count()
+    cancelled_count = Booking.query.filter_by(status='cancelled').count()
+    
     recent_bookings = Booking.query.order_by(Booking.created_at.desc()).limit(5).all()
     spots = ParkingSpot.query.all()
     
@@ -292,6 +333,7 @@ def manager_dashboard():
                          today_revenue=today_revenue,
                          staff_count=staff_count,
                          maintenance_count=maintenance_count,
+                         cancelled_count=cancelled_count,
                          recent_bookings=recent_bookings,
                          spots=spots)
 
@@ -397,6 +439,9 @@ def manager_reports():
     ).scalar() or 0
     monthly_bookings = Booking.query.filter(Booking.created_at >= month_ago).count()
     
+    cancelled_bookings = Booking.query.filter_by(status='cancelled').count()
+    total_refund = db.session.query(db.func.sum(Booking.refund_amount)).filter_by(status='cancelled').scalar() or 0
+    
     popular_spots = db.session.query(
         ParkingSpot.spot_number,
         db.func.count(Booking.id).label('count')
@@ -406,6 +451,7 @@ def manager_reports():
                          daily_revenue=daily_revenue, daily_bookings=daily_bookings,
                          weekly_revenue=weekly_revenue, weekly_bookings=weekly_bookings,
                          monthly_revenue=monthly_revenue, monthly_bookings=monthly_bookings,
+                         cancelled_bookings=cancelled_bookings, total_refund=total_refund,
                          popular_spots=popular_spots)
 
 @app.route('/manager/maintenance')
@@ -483,7 +529,60 @@ def update_price():
     flash('Price updated!', 'success')
     return redirect(url_for('manager_pricing'))
 
-# ==================== USER ROUTES ====================
+@app.route('/manager/view_cancellations')
+@login_required
+def manager_view_cancellations():
+    """Manager can view all cancelled bookings (Read Only)"""
+    if current_user.role != 'manager':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('user_dashboard'))
+    
+    cancelled_bookings = Booking.query.filter_by(status='cancelled').order_by(Booking.cancelled_at.desc()).all()
+    total_refund_amount = db.session.query(db.func.sum(Booking.refund_amount)).filter_by(status='cancelled').scalar() or 0
+    total_original_amount = db.session.query(db.func.sum(Booking.total_amount)).filter_by(status='cancelled').scalar() or 0
+    total_cancelled = len(cancelled_bookings)
+    
+    today = datetime.now().date()
+    today_cancellations = Booking.query.filter(
+        db.func.date(Booking.cancelled_at) == today,
+        Booking.status == 'cancelled'
+    ).count()
+    
+    week_ago = datetime.now() - timedelta(days=7)
+    weekly_cancellations = Booking.query.filter(
+        Booking.cancelled_at >= week_ago,
+        Booking.status == 'cancelled'
+    ).count()
+    
+    month_ago = datetime.now() - timedelta(days=30)
+    monthly_cancellations = Booking.query.filter(
+        Booking.cancelled_at >= month_ago,
+        Booking.status == 'cancelled'
+    ).count()
+    
+    total_bookings = Booking.query.count()
+    if total_bookings > 0:
+        cancellation_rate = round((total_cancelled / total_bookings) * 100, 1)
+    else:
+        cancellation_rate = 0
+    
+    if total_cancelled > 0:
+        avg_refund = round(total_refund_amount / total_cancelled, 2)
+    else:
+        avg_refund = 0
+    
+    return render_template('manager/view_cancellations.html',
+                         cancelled_bookings=cancelled_bookings,
+                         total_refund_amount=total_refund_amount,
+                         total_original_amount=total_original_amount,
+                         total_cancelled=total_cancelled,
+                         today_cancellations=today_cancellations,
+                         weekly_cancellations=weekly_cancellations,
+                         monthly_cancellations=monthly_cancellations,
+                         cancellation_rate=cancellation_rate,
+                         avg_refund=avg_refund)
+
+# ==================== USER ROUTES WITH CANCELLATION ====================
 @app.route('/user/dashboard')
 @login_required
 def user_dashboard():
@@ -495,8 +594,12 @@ def user_dashboard():
     
     available_spots = ParkingSpot.query.filter_by(status='available').all()
     active_booking = Booking.query.filter_by(user_id=current_user.id, status='active').first()
+    cancelled_count = Booking.query.filter_by(user_id=current_user.id, status='cancelled').count()
     
-    return render_template('user/dashboard.html', available_spots=available_spots, active_booking=active_booking)
+    return render_template('user/dashboard.html', 
+                         available_spots=available_spots, 
+                         active_booking=active_booking,
+                         cancelled_count=cancelled_count)
 
 @app.route('/user/book_slot/<int:spot_id>', methods=['GET', 'POST'])
 @login_required
@@ -523,7 +626,7 @@ def book_slot(spot_id):
         booking = Booking(
             user_id=current_user.id, spot_id=spot.id,
             start_time=start_time, end_time=end_time,
-            total_amount=total_amount, status='active'
+            total_amount=total_amount, status='active', payment_status='pending'
         )
         
         db.session.add(booking)
@@ -552,13 +655,19 @@ def process_payment(booking_id):
     
     payment_method = request.form['payment_method']
     
-    payment = Payment(booking_id=booking.id, amount=booking.total_amount, payment_method=payment_method, status='completed')
+    payment = Payment(
+        booking_id=booking.id, 
+        amount=booking.total_amount, 
+        payment_method=payment_method, 
+        status='completed',
+        transaction_id=f'TXN_{booking.id}_{datetime.now().timestamp()}'
+    )
     booking.payment_status = 'paid'
     
     db.session.add(payment)
     db.session.commit()
     
-    flash('Payment successful!', 'success')
+    flash('Payment successful! Your parking spot is booked.', 'success')
     return redirect(url_for('user_dashboard'))
 
 @app.route('/user/my_bookings')
@@ -569,6 +678,89 @@ def my_bookings():
     
     bookings = Booking.query.filter_by(user_id=current_user.id).order_by(Booking.created_at.desc()).all()
     return render_template('user/my_bookings.html', bookings=bookings)
+
+@app.route('/user/cancel_booking/<int:booking_id>', methods=['GET', 'POST'])
+@login_required
+def cancel_booking(booking_id):
+    """User cancels their booking"""
+    if current_user.role != 'user':
+        flash('Access denied!', 'danger')
+        return redirect(url_for('user_dashboard'))
+    
+    booking = Booking.query.get_or_404(booking_id)
+    
+    if booking.user_id != current_user.id:
+        flash('You can only cancel your own bookings!', 'danger')
+        return redirect(url_for('my_bookings'))
+    
+    if booking.status == 'completed':
+        flash('Cannot cancel a completed booking!', 'warning')
+        return redirect(url_for('my_bookings'))
+    
+    if booking.status == 'cancelled':
+        flash('This booking is already cancelled!', 'info')
+        return redirect(url_for('my_bookings'))
+    
+    if request.method == 'POST':
+        cancellation_reason = request.form.get('cancellation_reason')
+        additional_comments = request.form.get('additional_comments', '')
+        
+        full_reason = cancellation_reason
+        if additional_comments:
+            full_reason += f" - {additional_comments}"
+        
+        now = datetime.now()
+        if now < booking.start_time:
+            refund_amount = booking.total_amount
+            refund_percentage = 100
+            flash(f'Booking cancelled! Full refund of ₹{refund_amount} will be processed.', 'success')
+        elif now < booking.end_time:
+            refund_amount = booking.total_amount * 0.5
+            refund_percentage = 50
+            flash(f'Booking cancelled! Partial refund of ₹{refund_amount} will be processed.', 'warning')
+        else:
+            refund_amount = 0
+            refund_percentage = 0
+            flash('Booking cancelled but no refund available as time has passed.', 'info')
+        
+        booking.status = 'cancelled'
+        booking.cancellation_reason = full_reason
+        booking.cancelled_at = datetime.now()
+        booking.refund_amount = refund_amount
+        booking.cancelled_by = 'user'
+        
+        if refund_amount > 0 and booking.payment_status == 'paid':
+            booking.payment_status = 'refunded'
+            
+            refund_payment = Payment(
+                booking_id=booking.id,
+                amount=-refund_amount,
+                payment_method='refund',
+                status='completed',
+                transaction_id=f'REF_{booking.id}_{datetime.now().timestamp()}',
+                refunded_at=datetime.now()
+            )
+            db.session.add(refund_payment)
+        
+        spot = ParkingSpot.query.get(booking.spot_id)
+        spot.status = 'available'
+        
+        cancellation_log = CancellationLog(
+            booking_id=booking.id,
+            user_id=current_user.id,
+            cancelled_by_role='user',
+            cancellation_reason=full_reason,
+            original_amount=booking.total_amount,
+            refund_amount=refund_amount,
+            refund_percentage=refund_percentage
+        )
+        db.session.add(cancellation_log)
+        
+        db.session.commit()
+        
+        return redirect(url_for('my_bookings'))
+    
+    return render_template('user/cancel_booking.html', booking=booking)
 
 @app.route('/user/release_spot/<int:booking_id>')
 @login_required
@@ -587,6 +779,71 @@ def release_spot(booking_id):
     db.session.commit()
     flash('Parking spot released!', 'success')
     return redirect(url_for('user_dashboard'))
+
+# ==================== API ROUTES FOR AJAX CANCELLATION ====================
+@app.route('/api/cancel_booking/<int:booking_id>', methods=['POST'])
+@login_required
+def api_cancel_booking(booking_id):
+    """AJAX endpoint for cancellation"""
+    if current_user.role != 'user':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    booking = Booking.query.get_or_404(booking_id)
+    
+    if booking.user_id != current_user.id:
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    if booking.status != 'active':
+        return jsonify({'error': 'Booking cannot be cancelled'}), 400
+    
+    data = request.get_json()
+    reason = data.get('reason', 'No reason provided')
+    
+    now = datetime.now()
+    if now < booking.start_time:
+        refund_amount = booking.total_amount
+        refund_percentage = 100
+        message = f'Full refund of ₹{refund_amount}'
+    elif now < booking.end_time:
+        refund_amount = booking.total_amount * 0.5
+        refund_percentage = 50
+        message = f'Partial refund of ₹{refund_amount}'
+    else:
+        refund_amount = 0
+        refund_percentage = 0
+        message = 'No refund available'
+    
+    booking.status = 'cancelled'
+    booking.cancellation_reason = reason
+    booking.cancelled_at = now
+    booking.refund_amount = refund_amount
+    booking.cancelled_by = 'user'
+    
+    if refund_amount > 0 and booking.payment_status == 'paid':
+        booking.payment_status = 'refunded'
+    
+    spot = ParkingSpot.query.get(booking.spot_id)
+    spot.status = 'available'
+    
+    cancellation_log = CancellationLog(
+        booking_id=booking.id,
+        user_id=current_user.id,
+        cancelled_by_role='user',
+        cancellation_reason=reason,
+        original_amount=booking.total_amount,
+        refund_amount=refund_amount,
+        refund_percentage=refund_percentage
+    )
+    db.session.add(cancellation_log)
+    
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': f'Booking cancelled successfully. {message}',
+        'refund_amount': refund_amount,
+        'refund_percentage': refund_percentage
+    })
 
 if __name__ == '__main__':
     with app.app_context():

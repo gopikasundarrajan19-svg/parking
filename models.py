@@ -1,3 +1,4 @@
+# models.py
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import UserMixin
 from datetime import datetime
@@ -11,7 +12,7 @@ class User(UserMixin, db.Model):
     phone = db.Column(db.String(15), nullable=False)
     password = db.Column(db.String(200), nullable=False)
     vehicle_number = db.Column(db.String(20), nullable=True)
-    role = db.Column(db.String(30), default='user')  # admin, manager, manager_pending, user
+    role = db.Column(db.String(30), default='user')
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
     
     bookings = db.relationship('Booking', backref='user', lazy=True)
@@ -22,7 +23,7 @@ class ManagerApplication(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
     experience = db.Column(db.String(500), nullable=False)
     qualification = db.Column(db.String(500), nullable=False)
-    status = db.Column(db.String(20), default='pending')  # pending, approved, rejected
+    status = db.Column(db.String(20), default='pending')
     applied_date = db.Column(db.DateTime, default=datetime.utcnow)
     reviewed_date = db.Column(db.DateTime)
     review_notes = db.Column(db.String(500))
@@ -43,9 +44,15 @@ class Booking(db.Model):
     start_time = db.Column(db.DateTime, nullable=False)
     end_time = db.Column(db.DateTime, nullable=False)
     total_amount = db.Column(db.Float, nullable=False)
-    status = db.Column(db.String(20), default='active')
-    payment_status = db.Column(db.String(20), default='pending')
+    status = db.Column(db.String(20), default='active')  # active, cancelled, completed
+    payment_status = db.Column(db.String(20), default='pending')  # pending, paid, refunded
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Cancellation fields
+    cancellation_reason = db.Column(db.String(500), nullable=True)
+    cancelled_at = db.Column(db.DateTime, nullable=True)
+    refund_amount = db.Column(db.Float, nullable=True)
+    cancelled_by = db.Column(db.String(50), default='user')  # user, admin, system
     
     payments = db.relationship('Payment', backref='booking', lazy=True)
 
@@ -55,7 +62,12 @@ class Payment(db.Model):
     amount = db.Column(db.Float, nullable=False)
     payment_method = db.Column(db.String(50), nullable=False)
     status = db.Column(db.String(20), default='pending')
+    transaction_id = db.Column(db.String(100), unique=True, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Refund details
+    refund_transaction_id = db.Column(db.String(100), nullable=True)
+    refunded_at = db.Column(db.DateTime, nullable=True)
 
 class Staff(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -78,3 +90,18 @@ class Maintenance(db.Model):
     completed_at = db.Column(db.DateTime)
     
     spot = db.relationship('ParkingSpot', backref='maintenances')
+
+class CancellationLog(db.Model):
+    """Track all cancellation activities for analytics"""
+    id = db.Column(db.Integer, primary_key=True)
+    booking_id = db.Column(db.Integer, db.ForeignKey('booking.id'), nullable=False)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    cancelled_by_role = db.Column(db.String(20), nullable=False)
+    cancellation_reason = db.Column(db.String(500), nullable=False)
+    original_amount = db.Column(db.Float, nullable=False)
+    refund_amount = db.Column(db.Float, nullable=False)
+    refund_percentage = db.Column(db.Float, nullable=False)
+    cancelled_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    booking = db.relationship('Booking', backref='cancellation_logs')
+    user = db.relationship('User', backref='cancellations')

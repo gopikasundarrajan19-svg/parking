@@ -1,44 +1,118 @@
 {% extends "base.html" %}
 
 {% block content %}
-<h2>User Dashboard</h2>
+<div class="container mt-4">
+    <h2 class="mb-4">User Dashboard</h2>
 
-{% if active_booking %}
-<div class="alert alert-warning">
-    Active booking at Spot {{ active_booking.parking_spot.spot_number }}
-    <a href="{{ url_for('release_spot', booking_id=active_booking.id) }}" class="btn btn-danger btn-sm float-end">Release</a>
-</div>
-{% endif %}
-
-<div class="row">
-    <div class="col-md-8">
-        <h3>Available Spots</h3>
-        <div class="row">
-            {% for spot in available_spots %}
-            <div class="col-md-4 mb-3">
-                <div class="card">
-                    <div class="card-body text-center">
-                        <h5>Spot {{ spot.spot_number }}</h5>
-                        <p>{{ spot.spot_type|upper }} | ₹{{ spot.price_per_hour }}/hr</p>
-                        {% if not active_booking %}
-                        <a href="{{ url_for('book_slot', spot_id=spot.id) }}" class="btn btn-primary">Book</a>
-                        {% endif %}
-                    </div>
-                </div>
+    {% if active_booking %}
+    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <strong><i class="fas fa-car"></i> Active Booking!</strong><br>
+                Spot: <strong>{{ active_booking.parking_spot.spot_number }}</strong> | 
+                Amount: <strong>₹{{ active_booking.total_amount }}</strong><br>
+                Time: {{ active_booking.start_time.strftime('%H:%M') }} - {{ active_booking.end_time.strftime('%H:%M') }}
             </div>
-            {% endfor %}
+            <div class="col-md-4 text-end">
+                <a href="{{ url_for('release_spot', booking_id=active_booking.id) }}" 
+                   class="btn btn-success btn-sm"
+                   onclick="return confirm('Release this parking spot?')">
+                    <i class="fas fa-check"></i> Release
+                </a>
+                <button type="button" class="btn btn-danger btn-sm" 
+                        data-bs-toggle="modal" 
+                        data-bs-target="#cancelActiveModal">
+                    <i class="fas fa-ban"></i> Cancel
+                </button>
+            </div>
         </div>
     </div>
-    
-    <div class="col-md-4">
-        <div class="card">
-            <div class="card-header">
-                <h5>My Profile</h5>
+
+    <!-- Cancel Modal for Active Booking -->
+    <div class="modal fade" id="cancelActiveModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title"><i class="fas fa-ban"></i> Cancel Booking</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <form method="POST" action="{{ url_for('cancel_booking', booking_id=active_booking.id) }}">
+                    <div class="modal-body">
+                        <div class="alert alert-warning">
+                            <strong>⚠️ Cancel Booking</strong><br>
+                            Spot: {{ active_booking.parking_spot.spot_number }}<br>
+                            Amount: ₹{{ active_booking.total_amount }}
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <strong>💰 Refund Policy:</strong><br>
+                            ✅ Before start: 100% refund<br>
+                            ⚠️ During booking: 50% refund<br>
+                            ❌ After end: No refund
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label>Reason for cancellation</label>
+                            <select name="cancellation_reason" class="form-control" required>
+                                <option value="">Select reason</option>
+                                <option value="Changed plans">Changed plans</option>
+                                <option value="Found cheaper">Found cheaper parking</option>
+                                <option value="Emergency">Emergency</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                        <button type="submit" class="btn btn-danger">Confirm Cancel</button>
+                    </div>
+                </form>
             </div>
-            <div class="card-body">
-                <p><strong>{{ current_user.name }}</strong></p>
-                <p>{{ current_user.email }}<br>{{ current_user.phone }}<br>{{ current_user.vehicle_number }}</p>
-                <a href="{{ url_for('my_bookings') }}" class="btn btn-info w-100">My Bookings</a>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="row">
+        <div class="col-md-8">
+            <h3>Available Parking Spots</h3>
+            <div class="row">
+                {% for spot in available_spots %}
+                <div class="col-md-4 mb-3">
+                    <div class="card h-100">
+                        <div class="card-body text-center">
+                            <h4>🚗 Spot {{ spot.spot_number }}</h4>
+                            <p><strong>Type:</strong> {{ spot.spot_type|upper }}</p>
+                            <p><strong>Price:</strong> ₹{{ spot.price_per_hour }}/hour</p>
+                            {% if not active_booking %}
+                            <a href="{{ url_for('book_slot', spot_id=spot.id) }}" class="btn btn-primary w-100">
+                                <i class="fas fa-book"></i> Book Now
+                            </a>
+                            {% else %}
+                            <button class="btn btn-secondary w-100" disabled>
+                                <i class="fas fa-lock"></i> Unavailable
+                            </button>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="fas fa-user"></i> My Profile</h5>
+                </div>
+                <div class="card-body">
+                    <p><strong>Name:</strong> {{ current_user.name }}</p>
+                    <p><strong>Email:</strong> {{ current_user.email }}</p>
+                    <p><strong>Phone:</strong> {{ current_user.phone }}</p>
+                    <p><strong>Vehicle:</strong> {{ current_user.vehicle_number }}</p>
+                    <hr>
+                    <a href="{{ url_for('my_bookings') }}" class="btn btn-info w-100">
+                        <i class="fas fa-history"></i> My Bookings
+                    </a>
+                </div>
             </div>
         </div>
     </div>
