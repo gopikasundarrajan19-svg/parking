@@ -9,6 +9,8 @@
             <i class="fas fa-parking"></i>
             <h3>{{ total_spots }}</h3>
             <p>Total Spots</p>
+            <small class="text-success">Available: {{ available_spots }}</small><br>
+            <small class="text-danger">Occupied: {{ occupied_spots }}</small>
         </div>
     </div>
     <div class="col-md-3">
@@ -16,6 +18,7 @@
             <i class="fas fa-book"></i>
             <h3>{{ total_bookings }}</h3>
             <p>Total Bookings</p>
+            <small class="text-danger">Cancelled: {{ cancelled_bookings }}</small>
         </div>
     </div>
     <div class="col-md-3">
@@ -35,7 +38,7 @@
 </div>
 
 <div class="row">
-    <div class="col-md-6">
+    <div class="col-md-4">
         <div class="card">
             <div class="card-header bg-warning text-white">
                 <h5>Pending Manager Applications</h5>
@@ -47,43 +50,133 @@
         </div>
     </div>
     
-    <div class="col-md-6">
+    <div class="col-md-4">
         <div class="card">
-            <div class="card-header">
+            <div class="card-header bg-info text-white">
+                <h5>Maintenance Requests</h5>
+            </div>
+            <div class="card-body text-center">
+                <h1>{{ pending_maintenance_count if pending_maintenance_count is defined else 0 }}</h1>
+                <a href="{{ url_for('admin_maintenance') }}" class="btn btn-info">Manage Maintenance</a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5>Manager Details</h5>
+            </div>
+            <div class="card-body text-center">
+                <h1>{{ total_managers if total_managers is defined else 0 }}</h1>
+                <p>Active Managers</p>
+                <a href="{{ url_for('view_managers') }}" class="btn btn-success">View All Managers</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-3">
+    <div class="col-md-12">
+        <div class="card">
+            <div class="card-header bg-dark text-white">
                 <h5>Quick Actions</h5>
             </div>
             <div class="card-body">
-                <a href="{{ url_for('manage_spots') }}" class="btn btn-primary mb-2 w-100">
-                    <i class="fas fa-plus"></i> Manage Parking Spots
-                </a>
-                <a href="{{ url_for('admin_view_bookings') }}" class="btn btn-info w-100">
-                    <i class="fas fa-eye"></i> View All Bookings
-                </a>
+                <div class="row">
+                    <div class="col-md-3">
+                        <a href="{{ url_for('manage_spots') }}" class="btn btn-primary w-100 mb-2">
+                            <i class="fas fa-plus"></i> Manage Parking Spots
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('admin_view_bookings') }}" class="btn btn-info w-100 mb-2">
+                            <i class="fas fa-eye"></i> View All Bookings
+                        </a>
+                    </div>
+                    <div class="col-md-3">
+                        <a href="{{ url_for('admin_maintenance') }}" class="btn btn-warning w-100 mb-2">
+                            <i class="fas fa-tools"></i> Manage Maintenance
+                        </a>
+                    </div>
+                
+                </div>
             </div>
         </div>
     </div>
 </div>
 
 <div class="card mt-4">
-    <div class="card-header">
+    <div class="card-header bg-success text-white">
         <h5>Recent Bookings</h5>
     </div>
     <div class="card-body">
-        <table class="table">
-            <thead>
-                <tr><th>User</th><th>Spot</th><th>Amount</th><th>Status</th></tr>
-            </thead>
-            <tbody>
-                {% for booking in recent_bookings %}
-                <tr>
-                    <td>{{ booking.user.name }}</td>
-                    <td>{{ booking.parking_spot.spot_number }}</td>
-                    <td>₹{{ booking.total_amount }}</td>
-                    <td><span class="badge bg-success">{{ booking.status }}</span></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead class="table-dark">
+                    <tr>
+                        <th>ID</th>
+                        <th>User</th>
+                        <th>Spot</th>
+                        <th>Amount</th>
+                        <th>Status</th>
+                        <th>Date</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for booking in recent_bookings %}
+                    <tr>
+                        <td>#{{ booking.id }}</td>
+                        <td>{{ booking.user.name }}</td>
+                        <td>Spot {{ booking.parking_spot.spot_number }}</td>
+                        <td>₹{{ booking.total_amount }}</td>
+                        <td>
+                            <span class="badge {% if booking.status == 'active' %}bg-success{% elif booking.status == 'cancelled' %}bg-danger{% else %}bg-secondary{% endif %}">
+                                {{ booking.status|upper }}
+                            </span>
+                        </td>
+                        <td>{{ booking.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
     </div>
 </div>
+
+<style>
+    .dashboard-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    .dashboard-card i {
+        font-size: 40px;
+        color: #007bff;
+        margin-bottom: 10px;
+    }
+    .dashboard-card h3 {
+        margin: 10px 0;
+        font-size: 28px;
+    }
+    .dashboard-card p {
+        color: #666;
+        margin: 0;
+    }
+    .btn {
+        border-radius: 8px;
+        font-weight: 500;
+    }
+    .card {
+        height: 100%;
+    }
+    .card-body {
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+</style>
 {% endblock %}

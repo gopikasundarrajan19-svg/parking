@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">🔧 Maintenance Management - Admin</h2>
+    
+    <!-- Statistics Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5>Pending</h5>
+                    <h2>{{ pending_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5>In Progress</h5>
+                    <h2>{{ in_progress_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5>Completed</h5>
+                    <h2>{{ completed_count }}</h2>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="card bg-danger text-white">
+                <div class="card-body">
+                    <h5>Rejected</h5>
+                    <h2>{{ rejected_count }}</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- All Maintenance Requests Table -->
+    <div class="card">
+        <div class="card-header bg-dark text-white">
+            <h5>All Maintenance Requests</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Spot</th>
+                            <th>Issue Type</th>
+                            <th>Description</th>
+                            <th>Priority</th>
+                            <th>Status</th>
+                            <th>Reported Date</th>
+                            <th>Assigned To</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for req in maintenance_requests %}
+                        <tr class="{% if req.status == 'pending' %}table-warning{% elif req.status == 'in_progress' %}table-info{% elif req.status == 'completed' %}table-success{% elif req.status == 'rejected' %}table-danger{% endif %}">
+                            <td>{{ req.id }}</td>
+                            <td><strong>Spot {{ req.spot.spot_number }}</strong> (<small>{{ req.spot.spot_type|upper }}</small>)</td>
+                            <td>{{ req.issue_type }}</td>
+                            <td>{{ req.description[:50] }}{% if req.description|length > 50 %}...{% endif %}</td>
+                            <td>
+                                <span class="badge {% if req.priority == 'urgent' %}bg-danger{% elif req.priority == 'high' %}bg-warning{% elif req.priority == 'medium' %}bg-info{% else %}bg-secondary{% endif %}">
+                                    {{ req.priority|upper }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="badge {% if req.status == 'pending' %}bg-warning{% elif req.status == 'in_progress' %}bg-info{% elif req.status == 'completed' %}bg-success{% else %}bg-danger{% endif %}">
+                                    {{ req.status|upper }}
+                                </span>
+                            </td>
+                            <td>{{ req.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+                            <td>
+                                {% if req.assigned_to %}
+                                    {{ req.assigned_to }}
+                                {% else %}
+                                    <span class="text-muted">Not assigned</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-primary btn-sm" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#updateModal{{ req.id }}">
+                                    Update
+                                </button>
+                                <button type="button" class="btn btn-info btn-sm" 
+                                        data-bs-toggle="modal" 
+                                        data-bs-target="#viewModal{{ req.id }}">
+                                    View
+                                </button>
+                            </td>
+                        </tr>
+                        
+                        <!-- Update Modal -->
+                        <div class="modal fade" id="updateModal{{ req.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-primary text-white">
+                                        <h5>Update Maintenance #{{ req.id }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <form method="POST" action="{{ url_for('update_maintenance', maintenance_id=req.id) }}">
+                                        <div class="modal-body">
+                                            <div class="alert alert-info">
+                                                <strong>Spot:</strong> {{ req.spot.spot_number }}<br>
+                                                <strong>Issue:</strong> {{ req.issue_type }}<br>
+                                                <strong>Reported:</strong> {{ req.created_at.strftime('%Y-%m-%d') }}
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label>Status</label>
+                                                <select name="status" class="form-control">
+                                                    <option value="pending" {% if req.status == 'pending' %}selected{% endif %}>Pending</option>
+                                                    <option value="in_progress" {% if req.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                                                    <option value="completed" {% if req.status == 'completed' %}selected{% endif %}>Completed</option>
+                                                    <option value="rejected" {% if req.status == 'rejected' %}selected{% endif %}>Rejected</option>
+                                                </select>
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label>Assign To (Staff Name)</label>
+                                                <input type="text" name="assigned_to" class="form-control" 
+                                                       value="{{ req.assigned_to or '' }}" placeholder="e.g., John, Rajesh">
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label>Estimated Cost (₹)</label>
+                                                <input type="number" name="estimated_cost" class="form-control" 
+                                                       value="{{ req.estimated_cost or '' }}" step="0.01" placeholder="0.00">
+                                            </div>
+                                            
+                                            <div class="mb-3">
+                                                <label>Admin Notes</label>
+                                                <textarea name="admin_notes" class="form-control" rows="3" 
+                                                          placeholder="Add notes or resolution details...">{{ req.admin_notes or '' }}</textarea>
+                                            </div>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                            <button type="submit" class="btn btn-primary">Update Request</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- View Modal -->
+                        <div class="modal fade" id="viewModal{{ req.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-info text-white">
+                                        <h5>Maintenance Details #{{ req.id }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <table class="table table-bordered">
+                                            <tr><th>Spot Number</th><td>{{ req.spot.spot_number }}</td></tr>
+                                            <tr><th>Spot Type</th><td>{{ req.spot.spot_type|upper }}</td></tr>
+                                            <tr><th>Issue Type</th><td>{{ req.issue_type }}</td></tr>
+                                            <tr><th>Description</th><td>{{ req.description }}</td></tr>
+                                            <tr><th>Priority</th><td><span class="badge bg-warning">{{ req.priority|upper }}</span></td></tr>
+                                            <tr><th>Status</th><td><span class="badge bg-info">{{ req.status|upper }}</span></td></tr>
+                                            <tr><th>Reported Date</th><td>{{ req.created_at.strftime('%Y-%m-%d %H:%M') }}</td></tr>
+                                            {% if req.completed_at %}
+                                            <tr><th>Completed Date</th><td>{{ req.completed_at.strftime('%Y-%m-%d %H:%M') }}</td></tr>
+                                            {% endif %}
+                                            {% if req.assigned_to %}
+                                            <tr><th>Assigned To</th><td>{{ req.assigned_to }}</td></tr>
+                                            {% endif %}
+                                            {% if req.estimated_cost %}
+                                            <tr><th>Estimated Cost</th><td>₹{{ req.estimated_cost }}</td></tr>
+                                            {% endif %}
+                                            {% if req.admin_notes %}
+                                            <tr><th>Admin Notes</th><td>{{ req.admin_notes }}</td></tr>
+                                            {% endif %}
+                                        </table>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

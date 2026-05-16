@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-8 mx-auto">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <div class="card">
+                <div class="card-header bg-success text-white">
+                    <h4 class="mb-0">💳 Complete Payment for Multiple Spots</h4>
+                </div>
+                <div class="card-body">
+                    <h5>Booking Summary</h5>
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Spot Number</th>
+                                    <th>Type</th>
+                                    <th>Price/Hour</th>
+                                    <th>Hours</th>
+                                    <th>Amount</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for booking in bookings %}
+                                <tr>
+                                    <td>Spot {{ booking.spot_number }}</td>
+                                    <td>{{ booking.spot_type|upper }}</td>
+                                    <td>₹{{ booking.price_per_hour }}</td>
+                                    <td>{{ booking.duration }} hours</td>
+                                    <td>₹{{ booking.amount }}</td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                            <tfoot>
+                                <tr class="table-info">
+                                    <th colspan="4" class="text-end">Total Amount:</th>
+                                    <th>₹{{ total_amount }}</th>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
+                    
+                    <div class="alert alert-warning">
+                        <strong>⏰ Important Note:</strong><br>
+                        <small>⚠️ If you exceed the booked time for any spot, extra charges will apply at ₹{price_per_hour}/hour.</small>
+                    </div>
+                    
+                    <form method="POST">
+                        <div class="mb-3">
+                            <label class="form-label">Select Payment Method</label>
+                            <select name="payment_method" class="form-control" required>
+                                <option value="credit_card">💳 Credit Card</option>
+                                <option value="debit_card">💳 Debit Card</option>
+                                <option value="upi">📱 UPI (Google Pay, PhonePe)</option>
+                                <option value="cash">💰 Cash (Pay at Parking)</option>
+                            </select>
+                        </div>
+                        
+                        <div class="alert alert-info">
+                            <small>💡 Extra hours will be automatically calculated when you release the spot.</small>
+                        </div>
+                        
+                        <div class="d-grid gap-2">
+                            <button type="submit" class="btn btn-success btn-lg">
+                                Pay ₹{{ total_amount }} 💳
+                            </button>
+                            <a href="{{ url_for('user_book_multiple') }}" class="btn btn-secondary">
+                                ← Go Back and Edit
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

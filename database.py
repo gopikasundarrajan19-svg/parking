@@ -3,7 +3,7 @@ from models import db, User, ParkingSpot, Booking, Payment, Staff, Maintenance, 
 from sqlalchemy import inspect, text
 import bcrypt
 
-def init_db():
+def init_db(app=None):
     """Create all database tables"""
     db.create_all()
     print("✅ All tables created successfully!")
@@ -125,7 +125,7 @@ def add_missing_columns():
     except Exception as e:
         print(f"⚠️ Note: Some columns may already exist: {e}")
 
-def reset_database():
+def reset_database(app=None):
     """WARNING: This will delete all data!"""
     confirm = input("⚠️ WARNING: This will delete ALL data! Type 'DELETE' to confirm: ")
     if confirm == 'DELETE':
@@ -159,24 +159,3 @@ def show_database_info():
         print("\n🚫 CancellationLog Table Columns:")
         for row in result:
             print(f"   - {row[1]} ({row[2]})")
-
-if __name__ == '__main__':
-    print("🔧 DATABASE MANAGEMENT TOOL")
-    print("=" * 40)
-    print("1. Initialize/Create database")
-    print("2. Reset database (DELETE ALL DATA)")
-    print("3. Show database info")
-    
-    choice = input("\nEnter choice (1-3): ")
-    
-    if choice == '1':
-        with app.app_context():
-            init_db()
-    elif choice == '2':
-        with app.app_context():
-            reset_database()
-    elif choice == '3':
-        with app.app_context():
-            show_database_info()
-    else:
-        print("Invalid choice")

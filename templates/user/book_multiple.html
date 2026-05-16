@@ -1,0 +1,173 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h4 class="mb-0">🅿️ Book Multiple Parking Spots</h4>
+        </div>
+        <div class="card-body">
+            <!-- Flash messages -->
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }} alert-dismissible fade show" role="alert">
+                            {{ message }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+            
+            <form method="POST" id="multipleBookingForm">
+                <div id="slotsContainer">
+                    <!-- Slot 1 -->
+                    <div class="slot-card card mb-3">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <h5 class="mb-0">Booking #<span class="slot-number">1</span></h5>
+                                <button type="button" class="btn btn-danger btn-sm remove-slot" style="display: none;">
+                                    ❌ Remove
+                                </button>
+                            </div>
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label">Select Parking Spot *</label>
+                                    <select name="spot_ids" class="form-control spot-select" required>
+                                        <option value="">-- Select Spot --</option>
+                                        {% for spot in available_spots %}
+                                        <option value="{{ spot.id }}" 
+                                                data-price="{{ spot.price_per_hour }}"
+                                                data-spot-number="{{ spot.spot_number }}"
+                                                data-type="{{ spot.spot_type }}">
+                                            Spot {{ spot.spot_number }} - {{ spot.spot_type|upper }} 
+                                            (₹{{ spot.price_per_hour }}/hour)
+                                        </option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label class="form-label">Duration (hours) *</label>
+                                    <select name="durations" class="form-control duration-select" required>
+                                        <option value="1">1 hour</option>
+                                        <option value="2">2 hours</option>
+                                        <option value="3">3 hours</option>
+                                        <option value="4">4 hours</option>
+                                        <option value="6">6 hours</option>
+                                        <option value="8">8 hours</option>
+                                        <option value="12">12 hours</option>
+                                        <option value="24">24 hours</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-2 mb-3">
+                                    <label class="form-label">Amount</label>
+                                    <input type="text" class="form-control slot-amount" readonly placeholder="₹0">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Add More Button -->
+                <div class="mb-3">
+                    <button type="button" class="btn btn-success" id="addMoreBtn">
+                        ➕ Add Another Spot
+                    </button>
+                    <button type="button" class="btn btn-warning" id="refreshBtn" onclick="window.location.reload()">
+                        🔄 Refresh Available Spots
+                    </button>
+                </div>
+                
+                <!-- Total Amount -->
+                <div class="alert alert-info">
+                    <h5 class="mb-0">💰 Total Amount: ₹ <span id="totalAmount">0</span></h5>
+                </div>
+                
+                <!-- Submit Button -->
+                <div class="d-grid gap-2">
+                    <button type="submit" class="btn btn-primary btn-lg" id="submitBtn" disabled>
+                        Proceed to Payment 💳
+                    </button>
+                    <a href="{{ url_for('user_dashboard') }}" class="btn btn-secondary">
+                        ← Back to Dashboard
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    let slotCount = 1;
+    const slotsContainer = document.getElementById('slotsContainer');
+    const addMoreBtn = document.getElementById('addMoreBtn');
+    const totalAmountSpan = document.getElementById('totalAmount');
+    const submitBtn = document.getElementById('submitBtn');
+    
+    function calculateTotal() {
+        let total = 0;
+        let validSlots = 0;
+        
+        document.querySelectorAll('.slot-card').forEach(slot => {
+            const spotSelect = slot.querySelector('.spot-select');
+            const durationSelect = slot.querySelector('.duration-select');
+            const amountInput = slot.querySelector('.slot-amount');
+            
+            if (spotSelect.value && durationSelect.value) {
+                const price = parseFloat(spotSelect.selectedOptions[0].dataset.price);
+                const duration = parseInt(durationSelect.value);
+                const amount = price * duration;
+                total += amount;
+                amountInput.value = '₹' + amount;
+                validSlots++;
+            } else {
+                amountInput.value = '₹0';
+            }
+        });
+        
+        totalAmountSpan.innerText = total;
+        submitBtn.disabled = (validSlots === 0);
+    }
+    
+    function createNewSlot() {
+        slotCount++;
+        const originalSlot = document.querySelector('.slot-card');
+        const newSlot = originalSlot.cloneNode(true);
+        
+        // Reset values
+        newSlot.querySelector('.spot-select').value = '';
+        newSlot.querySelector('.duration-select').value = '1';
+        newSlot.querySelector('.slot-amount').value = '₹0';
+        newSlot.querySelector('.slot-number').innerText = slotCount;
+        
+        // Show remove button for new slots
+        const removeBtn = newSlot.querySelector('.remove-slot');
+        removeBtn.style.display = 'block';
+        
+        // Add event listeners
+        newSlot.querySelector('.spot-select').addEventListener('change', calculateTotal);
+        newSlot.querySelector('.duration-select').addEventListener('change', calculateTotal);
+        removeBtn.addEventListener('click', function() {
+            newSlot.remove();
+            calculateTotal();
+            // Renumber remaining slots
+            document.querySelectorAll('.slot-card').forEach((slot, idx) => {
+                slot.querySelector('.slot-number').innerText = idx + 1;
+            });
+            slotCount--;
+        });
+        
+        slotsContainer.appendChild(newSlot);
+        calculateTotal();
+    }
+    
+    addMoreBtn.addEventListener('click', createNewSlot);
+    
+    // Initialize event listeners
+    document.querySelectorAll('.spot-select, .duration-select').forEach(element => {
+        element.addEventListener('change', calculateTotal);
+    });
+    
+    calculateTotal();
+</script>
+{% endblock %}

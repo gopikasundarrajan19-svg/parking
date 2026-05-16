@@ -56,11 +56,18 @@
                 <a href="{{ url_for('manager_reports') }}" class="btn btn-success mb-2 w-100">
                     <i class="fas fa-chart-line"></i> Reports
                 </a>
-                <!-- View Cancellations Button - Added here -->
-                <a href="{{ url_for('manager_view_cancellations') }}" class="btn btn-danger w-100">
+                <!-- View Cancellations Button -->
+                <a href="{{ url_for('manager_view_cancellations') }}" class="btn btn-danger mb-2 w-100">
                     <i class="fas fa-ban"></i> View Cancellations 
                     {% if cancelled_count %}
                         <span class="badge bg-light text-dark">{{ cancelled_count }}</span>
+                    {% endif %}
+                </a>
+                <!-- ✅ NEW: Feedback Management Button -->
+                <a href="{{ url_for('manager_feedbacks') }}" class="btn btn-secondary w-100">
+                    <i class="fas fa-star"></i> Manage Feedbacks
+                    {% if pending_count %}
+                        <span class="badge bg-warning text-dark">{{ pending_count }}</span>
                     {% endif %}
                 </a>
             </div>
@@ -92,35 +99,70 @@
     </div>
 </div>
 
-<!-- Cancellation Stats Row -->
-<div class="row mt-3">
+<!-- ✅ NEW: Feedback Statistics Row -->
+<div class="row mt-4">
     <div class="col-md-12">
         <div class="card">
-            <div class="card-header bg-danger text-white">
-                <h5><i class="fas fa-ban"></i> Cancellation Statistics</h5>
+            <div class="card-header bg-info text-white">
+                <h5>📝 Feedback Summary</h5>
             </div>
             <div class="card-body">
-                <div class="row">
-                    <div class="col-md-4 text-center">
-                        <h4>Total Cancellations</h4>
-                        <h2 class="text-danger">{{ cancelled_count }}</h2>
+                <div class="row text-center">
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h4>{{ total_feedbacks if total_feedbacks is defined else 0 }}</h4>
+                            <p>Total Feedbacks</p>
+                        </div>
                     </div>
-                    <div class="col-md-4 text-center">
-                        <h4>Today's Cancellations</h4>
-                        <h2 class="text-warning">{{ today_cancellations if today_cancellations else 0 }}</h2>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h4>{{ pending_count if pending_count is defined else 0 }}</h4>
+                            <p>Pending Replies</p>
+                        </div>
                     </div>
-                    <div class="col-md-4 text-center">
-                        <h4>Total Refund Amount</h4>
-                        <h2 class="text-success">₹{{ total_refund if total_refund else 0 }}</h2>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h4>{{ replied_count if replied_count is defined else 0 }}</h4>
+                            <p>Replied</p>
+                        </div>
                     </div>
-                </div>
-                <div class="text-center mt-3">
-                    <a href="{{ url_for('manager_view_cancellations') }}" class="btn btn-danger">
-                        <i class="fas fa-eye"></i> View All Cancellations Details
-                    </a>
+                    <div class="col-md-3">
+                        <div class="border rounded p-3">
+                            <h4>{{ avg_rating if avg_rating is defined else 0 }} ⭐</h4>
+                            <p>Average Rating</p>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+    .dashboard-card {
+        background: white;
+        border-radius: 10px;
+        padding: 20px;
+        text-align: center;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        margin-bottom: 20px;
+    }
+    .dashboard-card i {
+        font-size: 40px;
+        color: #007bff;
+        margin-bottom: 10px;
+    }
+    .dashboard-card h3 {
+        margin: 10px 0;
+        font-size: 28px;
+    }
+    .dashboard-card p {
+        color: #666;
+        margin: 0;
+    }
+    .btn {
+        border-radius: 5px;
+        padding: 10px;
+    }
+</style>
 {% endblock %}

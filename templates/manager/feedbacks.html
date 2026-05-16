@@ -1,0 +1,318 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">📝 User Feedbacks - Manager View</h2>
+
+    <!-- Stats Cards -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="card bg-primary text-white">
+                <div class="card-body">
+                    <h5>Total Feedbacks</h5>
+                    <h2>{{ total_feedbacks }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-warning text-white">
+                <div class="card-body">
+                    <h5>Pending Reply</h5>
+                    <h2>{{ pending_count }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-success text-white">
+                <div class="card-body">
+                    <h5>Replied</h5>
+                    <h2>{{ replied_count }}</h2>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-3">
+            <div class="card bg-info text-white">
+                <div class="card-body">
+                    <h5>Avg Rating</h5>
+                    <h2>{{ avg_rating }} ⭐</h2>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="card shadow">
+        <div class="card-header bg-dark text-white">
+            <h5>All Feedbacks</h5>
+        </div>
+
+        <div class="card-body">
+
+            <div class="table-responsive">
+
+                <table class="table table-bordered table-hover align-middle">
+
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>User</th>
+                            <th>Rating</th>
+                            <th>Title</th>
+                            <th>Feedback</th>
+                            <th>Date</th>
+                            <th>Status</th>
+                            <th>Replied By</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                    {% for feedback in feedbacks %}
+
+                    <tr>
+
+                        <td>{{ feedback.id }}</td>
+
+                        <td>
+                            <strong>{{ feedback.user.name }}</strong><br>
+                            <small class="text-muted">
+                                {{ feedback.user.email }}
+                            </small>
+                        </td>
+
+                        <td>
+                            {% for i in range(feedback.rating) %}
+                                ⭐
+                            {% endfor %}
+                        </td>
+
+                        <td>{{ feedback.title }}</td>
+
+                        <td style="max-width:250px;word-wrap:break-word;">
+                            {{ feedback.comment[:100] }}
+                            {% if feedback.comment|length >100 %}
+                                ...
+                            {% endif %}
+                        </td>
+
+                        <td>
+                            {{ feedback.created_at.strftime('%Y-%m-%d') }}
+                        </td>
+
+                        <td>
+
+                            {% if feedback.status=="pending" %}
+                                <span class="badge bg-warning">
+                                    ⏳ Pending
+                                </span>
+                            {% else %}
+                                <span class="badge bg-success">
+                                    ✅ Replied
+                                </span>
+                            {% endif %}
+
+                        </td>
+
+                        <td>
+
+                        {% if feedback.replied_by %}
+
+                            <span class="badge bg-info">
+                                {{ feedback.replied_by|upper }}
+                            </span>
+
+                        {% else %}
+
+                            <span class="badge bg-secondary">
+                                Not replied
+                            </span>
+
+                        {% endif %}
+
+                        </td>
+
+                        <td>
+
+                        {% if feedback.status=="pending" %}
+
+                        <button
+                        class="btn btn-primary btn-sm"
+                        data-bs-toggle="modal"
+                        data-bs-target="#replyModal{{feedback.id}}">
+                        Reply
+                        </button>
+
+                        {% else %}
+
+                        <button
+                        class="btn btn-secondary btn-sm"
+                        data-bs-toggle="modal"
+                        data-bs-target="#viewReplyModal{{feedback.id}}">
+                        View
+                        </button>
+
+                        {% endif %}
+
+                        </td>
+
+                    </tr>
+
+                    {% endfor %}
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- MODALS OUTSIDE TABLE -->
+
+{% for feedback in feedbacks %}
+
+{% if feedback.status=="pending" %}
+
+<div class="modal fade"
+id="replyModal{{feedback.id}}"
+tabindex="-1">
+
+<div class="modal-dialog modal-dialog-scrollable">
+
+<div class="modal-content">
+
+<div class="modal-header bg-primary text-white">
+
+<h5>
+Reply to {{feedback.user.name}}
+</h5>
+
+<button class="btn-close"
+data-bs-dismiss="modal">
+</button>
+
+</div>
+
+<form method="POST"
+action="{{url_for('manager_reply_feedback',
+feedback_id=feedback.id)}}">
+
+<div class="modal-body">
+
+<div class="alert alert-info">
+
+<strong>Feedback:</strong>
+
+<p>{{feedback.comment}}</p>
+
+</div>
+
+<textarea
+name="reply_text"
+class="form-control"
+rows="5"
+required></textarea>
+
+</div>
+
+<div class="modal-footer">
+
+<button
+class="btn btn-secondary"
+data-bs-dismiss="modal">
+
+Cancel
+
+</button>
+
+<button
+class="btn btn-primary">
+
+Send Reply
+
+</button>
+
+</div>
+
+</form>
+
+</div>
+
+</div>
+
+</div>
+
+{% else %}
+
+<div class="modal fade"
+id="viewReplyModal{{feedback.id}}"
+tabindex="-1">
+
+<div class="modal-dialog modal-dialog-scrollable">
+
+<div class="modal-content">
+
+<div class="modal-header bg-success text-white">
+
+<h5>Reply Details</h5>
+
+<button class="btn-close"
+data-bs-dismiss="modal">
+</button>
+
+</div>
+
+<div class="modal-body">
+
+<div class="alert alert-info">
+
+<strong>Feedback:</strong>
+
+<p>{{feedback.comment}}</p>
+
+</div>
+
+<div class="alert alert-success">
+
+<strong>Reply:</strong>
+
+<p>{{feedback.reply_text}}</p>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+</div>
+
+{% endif %}
+
+{% endfor %}
+
+
+<style>
+
+.table-hover tbody tr:hover{
+background:#f8f9fa;
+}
+
+.modal-body{
+max-height:65vh;
+overflow-y:auto;
+}
+
+</style>
+
+{% endblock %}

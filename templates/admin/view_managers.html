@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container-fluid">
+    <h2 class="mb-4">Manage Managers</h2>
+    
+    <div class="card">
+        <div class="card-header bg-primary text-white">
+            <h5 class="mb-0">All Approved Managers</h5>
+        </div>
+        <div class="card-body">
+            <div class="table-responsive">
+                <table class="table table-bordered table-hover">
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Phone</th>
+                            <th>Vehicle Number</th>
+                            <th>Joined Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for manager in managers %}
+                        <tr>
+                            <td>{{ manager.id }}</td>
+                            <td>{{ manager.name }}</td>
+                            <td>{{ manager.email }}</td>
+                            <td>{{ manager.phone }}</td>
+                            <td>{{ manager.vehicle_number }}</td>
+                            <td>{{ manager.created_at.strftime('%Y-%m-%d') if manager.created_at else 'N/A' }}</td>
+                            <td>
+                                <button class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#viewManagerModal{{ manager.id }}">
+                                    <i class="fas fa-eye"></i> View
+                                </button>
+                                <button class="btn btn-sm btn-danger" data-bs-toggle="modal" data-bs-target="#removeManagerModal{{ manager.id }}">
+                                    <i class="fas fa-trash"></i> Remove
+                                </button>
+                            </td>
+                        </tr>
+                        
+                        <!-- View Manager Modal -->
+                        <div class="modal fade" id="viewManagerModal{{ manager.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-info text-white">
+                                        <h5 class="modal-title">Manager Details - {{ manager.name }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <table class="table table-borderless">
+                                            <tr>
+                                                <th width="40%">Name:</th>
+                                                <td>{{ manager.name }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Email:</th>
+                                                <td>{{ manager.email }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Phone:</th>
+                                                <td>{{ manager.phone }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Vehicle Number:</th>
+                                                <td>{{ manager.vehicle_number }}</td>
+                                            </tr>
+                                            <tr>
+                                                <th>Role:</th>
+                                                <td><span class="badge bg-success">{{ manager.role|upper }}</span></td>
+                                            </tr>
+                                            <tr>
+                                                <th>Joined Date:</th>
+                                                <td>{{ manager.created_at.strftime('%Y-%m-%d %H:%M') if manager.created_at else 'N/A' }}</td>
+                                            </tr>
+                                        </table>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Remove Manager Modal -->
+                        <div class="modal fade" id="removeManagerModal{{ manager.id }}" tabindex="-1">
+                            <div class="modal-dialog">
+                                <div class="modal-content">
+                                    <div class="modal-header bg-danger text-white">
+                                        <h5 class="modal-title">Remove Manager - {{ manager.name }}</h5>
+                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                    </div>
+                                    <div class="modal-body">
+                                        <div class="alert alert-warning">
+                                            <i class="fas fa-exclamation-triangle"></i>
+                                            <strong>Warning!</strong> Are you sure you want to remove this manager?
+                                        </div>
+                                        <p><strong>Name:</strong> {{ manager.name }}</p>
+                                        <p><strong>Email:</strong> {{ manager.email }}</p>
+                                        <p class="text-danger">This action cannot be undone!</p>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                        <a href="{{ url_for('remove_manager', user_id=manager.id) }}" class="btn btn-danger">Yes, Remove Manager</a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        {% else %}
+                        <tr>
+                            <td colspan="7" class="text-center text-muted">
+                                <i class="fas fa-user-friends fa-3x mb-2 d-block"></i>
+                                No managers found
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="mt-3">
+        <a href="{{ url_for('admin_dashboard') }}" class="btn btn-secondary">
+            <i class="fas fa-arrow-left"></i> Back to Dashboard
+        </a>
+    </div>
+</div>
+
+<style>
+    .table th {
+        background-color: #f8f9fa;
+    }
+    .btn-sm {
+        margin: 0 2px;
+    }
+</style>
+{% endblock %}

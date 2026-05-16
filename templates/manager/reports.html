@@ -38,14 +38,97 @@
         <h5>Popular Spots</h5>
     </div>
     <div class="card-body">
-        <table class="table">
-            <thead><tr><th>Spot</th><th>Bookings</th></tr></thead>
-            <tbody>
-                {% for spot in popular_spots %}
-                <tr><td>Spot {{ spot.spot_number }}</td><td>{{ spot.count }}</td></tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <canvas id="spotsChart" width="400" height="200"></canvas>
     </div>
 </div>
+
+<div class="row mt-4">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header">
+                <h5>Cancellation Summary</h5>
+            </div>
+            <div class="card-body">
+                <p><strong>Total Cancelled Bookings:</strong> {{ cancelled_bookings }}</p>
+                <p><strong>Total Refund Amount:</strong> ₹{{ total_refund }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Get data from HTML data attributes
+    var spotNumbers = [];
+    var bookingCounts = [];
+</script>
+
+<!-- Put template tags in separate script with type="text/template" -->
+<script type="text/template" id="spot-data">
+    {% for spot in popular_spots %}
+        {{ spot.spot_number }}|{{ spot.count }}
+        {% if not loop.last %},{% endif %}
+    {% endfor %}
+</script>
+
+<script>
+    // Parse the template data
+    var dataString = document.getElementById('spot-data').innerHTML.trim();
+    if (dataString) {
+        var pairs = dataString.split(',');
+        for (var i = 0; i < pairs.length; i++) {
+            var parts = pairs[i].split('|');
+            if (parts.length === 2) {
+                spotNumbers.push('Spot ' + parts[0]);
+                bookingCounts.push(parseInt(parts[1]));
+            }
+        }
+    }
+    
+    // Create chart
+    if (spotNumbers.length > 0) {
+        var canvas = document.getElementById('spotsChart');
+        var ctx = canvas.getContext('2d');
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: spotNumbers,
+                datasets: [{
+                    label: 'Number of Bookings',
+                    data: bookingCounts,
+                    backgroundColor: 'rgba(54, 162, 235, 0.6)',
+                    borderColor: 'rgba(54, 162, 235, 1)',
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Bookings Count'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Parking Spots'
+                        }
+                    }
+                }
+            }
+        });
+    }
+</script>
+
+<!-- Auto refresh every 10 seconds -->
+<script>
+    setTimeout(function() {
+        location.reload();
+    }, 10000);
+</script>
 {% endblock %}

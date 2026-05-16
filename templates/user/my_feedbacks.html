@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">📝 My Feedbacks</h2>
+    
+    <div class="mb-3">
+        <a href="{{ url_for('give_feedback') }}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Give New Feedback
+        </a>
+    </div>
+    
+    {% if feedbacks %}
+        <div class="row">
+            {% for feedback in feedbacks %}
+            <div class="col-md-6 mb-3">
+                <div class="card h-100">
+                    <div class="card-header">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <strong>
+                                {% for i in range(feedback.rating) %}⭐{% endfor %}
+                                ({{ feedback.rating }}/5)
+                            </strong>
+                            <small class="text-muted">{{ feedback.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        <h5>{{ feedback.title }}</h5>
+                        <p class="text-muted">{{ feedback.comment }}</p>
+                        
+                        {% if feedback.status == 'replied' and feedback.reply_text %}
+                            <div class="alert alert-success mt-3">
+                                <strong>
+                                    {% if feedback.replied_by == 'manager' %}
+                                        👨‍💼 Manager Reply:
+                                    {% else %}
+                                        👨‍💻 Admin Reply:
+                                    {% endif %}
+                                </strong><br>
+                                "{{ feedback.reply_text }}"
+                                <small class="d-block mt-2 text-muted">
+                                    Replied on: {{ feedback.reply_date.strftime('%Y-%m-%d %H:%M') if feedback.reply_date else 'N/A' }}
+                                </small>
+                            </div>
+                        {% elif feedback.status == 'pending' %}
+                            <div class="alert alert-warning">
+                                <small>⏳ Waiting for manager response...</small>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <div class="alert alert-info text-center">
+            <h5>No feedbacks yet</h5>
+            <p>Share your experience with us!</p>
+            <a href="{{ url_for('give_feedback') }}" class="btn btn-primary">Give Feedback</a>
+        </div>
+    {% endif %}
+</div>
+{% endblock %}
